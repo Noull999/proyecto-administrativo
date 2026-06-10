@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 
-const BASE = 'http://localhost:3001/api';
+const BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3001/api';
 
 export function useApi() {
   const { token, logout } = useAuth();
@@ -17,6 +17,9 @@ export function useApi() {
     (res) => res,
     (err) => {
       if (err.response?.status === 401) logout();
+      if (!err.response) {
+        err.message = 'Sin conexión con el servidor. Verifica que el backend esté corriendo.';
+      }
       return Promise.reject(err);
     }
   );

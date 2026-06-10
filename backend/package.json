@@ -6,7 +6,7 @@
   "main": "src/index.js",
   "scripts": {
     "dev": "tsx --watch src/index.js",
-    "start": "tsx src/index.js",
+    "start": "prisma migrate deploy && tsx src/index.js",
     "seed": "tsx src/seed.js",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio"
@@ -21,6 +21,7 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
+    "pdfkit": "^0.19.0",
     "prisma": "^5.22.0"
   },
   "devDependencies": {
