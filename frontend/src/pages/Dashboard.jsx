@@ -1,78 +1,38 @@
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
 
 export default function Dashboard() {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
-
-  function handleLogout() {
-    logout();
-    navigate('/login');
-  }
+  const { user } = useAuth();
 
   return (
-    <div style={styles.container}>
-      <header style={styles.header}>
-        <h1 style={styles.title}>Servicios Asencio</h1>
-        <div style={styles.headerRight}>
-          <span style={styles.userName}>{user?.nombre}</span>
-          <button onClick={handleLogout} style={styles.logoutBtn}>
-            Cerrar sesión
-          </button>
-        </div>
-      </header>
+    <div>
+      <h1 style={{ margin: '0 0 0.5rem', fontSize: '1.5rem', color: '#111827' }}>
+        Bienvenido, {user?.nombre}
+      </h1>
+      <p style={{ margin: '0 0 2rem', color: '#6b7280', fontSize: '0.875rem' }}>
+        Dashboard con métricas — disponible en Fase 4.
+      </p>
 
-      <main style={styles.main}>
-        <h2 style={styles.welcome}>Bienvenido, {user?.nombre}</h2>
-        <p style={styles.subtitle}>
-          Dashboard en construcción — Fase 4 del plan de desarrollo.
-        </p>
-
-        <div style={styles.grid}>
-          {['Clientes', 'Productos', 'Facturas', 'Reportes'].map((item) => (
-            <div key={item} style={styles.card}>
-              <h3 style={styles.cardTitle}>{item}</h3>
-              <p style={styles.cardText}>Próximamente</p>
-            </div>
-          ))}
-        </div>
-      </main>
+      <div style={grid}>
+        {cards.map(({ label, value, sub, color }) => (
+          <div key={label} style={card}>
+            <p style={{ margin: '0 0 0.25rem', fontSize: '0.75rem', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              {label}
+            </p>
+            <p style={{ margin: 0, fontSize: '1.75rem', fontWeight: '700', color }}>{value}</p>
+            <p style={{ margin: '0.25rem 0 0', fontSize: '0.75rem', color: '#9ca3af' }}>{sub}</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
 
-const styles = {
-  container: { minHeight: '100vh', backgroundColor: '#f9fafb' },
-  header: {
-    backgroundColor: '#ffffff',
-    borderBottom: '1px solid #e5e7eb',
-    padding: '1rem 1.5rem',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  title: { margin: 0, fontSize: '1.125rem', fontWeight: '700', color: '#111827' },
-  headerRight: { display: 'flex', alignItems: 'center', gap: '1rem' },
-  userName: { fontSize: '0.875rem', color: '#374151' },
-  logoutBtn: {
-    padding: '0.375rem 0.75rem',
-    border: '1px solid #d1d5db',
-    borderRadius: '6px',
-    background: 'none',
-    cursor: 'pointer',
-    fontSize: '0.8rem',
-    color: '#374151',
-  },
-  main: { padding: '2rem 1.5rem' },
-  welcome: { margin: '0 0 0.5rem', color: '#111827' },
-  subtitle: { margin: '0 0 2rem', color: '#6b7280', fontSize: '0.875rem' },
-  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' },
-  card: {
-    backgroundColor: '#ffffff',
-    border: '1px solid #e5e7eb',
-    borderRadius: '8px',
-    padding: '1.5rem',
-  },
-  cardTitle: { margin: '0 0 0.5rem', fontSize: '1rem', color: '#111827' },
-  cardText: { margin: 0, fontSize: '0.875rem', color: '#9ca3af' },
-};
+const cards = [
+  { label: 'Facturado este mes', value: '$0', sub: 'Disponible en Fase 4', color: '#111827' },
+  { label: 'Pendiente de cobro', value: '$0', sub: 'Disponible en Fase 4', color: '#d97706' },
+  { label: 'Facturas vencidas', value: '0', sub: 'Disponible en Fase 4', color: '#dc2626' },
+  { label: 'Clientes activos', value: '—', sub: 'Disponible en Fase 4', color: '#2563eb' },
+];
+
+const grid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' };
+const card = { backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '1.25rem' };
