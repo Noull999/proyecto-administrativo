@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  nombre       String
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+}
+
+model Client {
+  id        Int       @id @default(autoincrement())
+  nombre    String
+  email     String?
+  telefono  String?
+  direccion String?
+  rfc       String?
+  activo    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  invoices  Invoice[]
+}
+
+model Product {
+  id           Int           @id @default(autoincrement())
+  nombre       String
+  descripcion  String?
+  precio       Float
+  activo       Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  invoiceItems InvoiceItem[]
+}
+
+model Invoice {
+  id               Int           @id @default(autoincrement())
+  clientId         Int
+  client           Client        @relation(fields: [clientId], references: [id])
+  tipo             String        // "cotizacion" | "factura"
+  folio            String        @unique
+  fecha            DateTime      @default(now())
+  fechaVencimiento DateTime?
+  estado           String        @default("borrador") // borrador | enviada | pagada | vencida
+  subtotal         Float         @default(0)
+  impuesto         Float         @default(0)
+  total            Float         @default(0)
+  notas            String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  items            InvoiceItem[]
+  payments         Payment[]
+}
+
+model InvoiceItem {
+  id             Int      @id @default(autoincrement())
+  invoiceId      Int
+  invoice        Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  productId      Int?
+  product        Product? @relation(fields: [productId], references: [id])
+  descripcion    String
+  cantidad       Float
+  precioUnitario Float
+  importe        Float
+}
+
+model Payment {
+  id         Int      @id @default(autoincrement())
+  invoiceId  Int
+  invoice    Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  fecha      DateTime @default(now())
+  monto      Float
+  metodo     String?  // efectivo | transferencia | tarjeta | cheque
+  referencia String?
+  createdAt  DateTime @default(now())
+}
