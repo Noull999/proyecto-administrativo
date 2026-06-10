@@ -1,11 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useApi } from '../hooks/useApi';
+import { useRole } from '../hooks/useRole';
 
 const emptyForm = { nombre: '', descripcion: '', precio: '' };
 
 export default function Products() {
   const api = useApi();
+  const { canWrite } = useRole();
   const [products, setProducts] = useState([]);
+  const [pagination, setPagination] = useState(null);
+  const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(null);
@@ -16,14 +20,16 @@ export default function Products() {
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await api.get('/products', { params: { search } });
-      setProducts(data);
+      const { data } = await api.get('/products', { params: { search, page, limit: 20 } });
+      setProducts(data.data);
+      setPagination(data.pagination);
     } finally {
       setLoading(false);
     }
-  }, [search]);
+  }, [search, page]);
 
   useEffect(() => { fetchProducts(); }, [fetchProducts]);
+  useEffect(() => { setPage(1); }, [search]);
 
   function openCreate() {
     setForm(emptyForm);
@@ -76,7 +82,7 @@ export default function Products() {
     <div>
       <div style={s.header}>
         <h1 style={s.title}>Productos y Servicios</h1>
-        <button onClick={openCreate} style={s.btnPrimary}>+ Nuevo producto</button>
+        {canWrite && <button onClick={openCreate} style={s.btnPrimary}>+ Nuevo producto</button>}
       </div>
 
       <div style={s.toolbar}>
@@ -96,7 +102,7 @@ export default function Products() {
         <table style={s.table}>
           <thead>
             <tr>
-              {['Nombre', 'Descripción', 'Precio', 'Estado', 'Acciones'].map((h) => (
+              {['Nombre', 'Descripción', 'Precio', 'Estado', ...(canWrite ? ['Acciones'] : [])].map((h) => (
                 <th key={h} style={s.th}>{h}</th>
               ))}
             </tr>
@@ -112,19 +118,29 @@ export default function Products() {
                     {p.activo ? 'Activo' : 'Inactivo'}
                   </span>
                 </td>
-                <td style={s.td}>
-                  <button onClick={() => openEdit(p)} style={s.btnAction}>Editar</button>
-                  <button
-                    onClick={() => handleToggle(p)}
-                    style={{ ...s.btnAction, color: p.activo ? '#d97706' : '#059669' }}
-                  >
-                    {p.activo ? 'Desactivar' : 'Activar'}
-                  </button>
-                </td>
+                {canWrite && (
+                  <td style={s.td}>
+                    <button onClick={() => openEdit(p)} style={s.btnAction}>Editar</button>
+                    <button
+                      onClick={() => handleToggle(p)}
+                      style={{ ...s.btnAction, color: p.activo ? '#d97706' : '#059669' }}
+                    >
+                      {p.activo ? 'Desactivar' : 'Activar'}
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
         </table>
+      )}
+
+      {pagination && pagination.pages > 1 && (
+        <div style={s.pagination}>
+          <button style={s.pgBtn} disabled={page === 1} onClick={() => setPage(page - 1)}>← Anterior</button>
+          <span style={s.pgInfo}>Página {pagination.page} de {pagination.pages} ({pagination.total} total)</span>
+          <button style={s.pgBtn} disabled={page >= pagination.pages} onClick={() => setPage(page + 1)}>Siguiente →</button>
+        </div>
       )}
 
       {modal && (
@@ -193,6 +209,9 @@ const s = {
   tr: { borderBottom: '1px solid #f3f4f6' },
   td: { padding: '0.875rem 1rem', fontSize: '0.875rem', color: '#374151' },
   empty: { color: '#9ca3af', textAlign: 'center', margin: '3rem 0' },
+  pagination: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', marginTop: '1.5rem' },
+  pgBtn: { padding: '0.4rem 0.875rem', border: '1px solid #d1d5db', borderRadius: '6px', background: '#fff', cursor: 'pointer', fontSize: '0.875rem', color: '#374151' },
+  pgInfo: { fontSize: '0.875rem', color: '#6b7280' },
   badge: { display: 'inline-block', padding: '0.2rem 0.6rem', borderRadius: '999px', fontSize: '0.75rem', fontWeight: '500' },
   badgeGreen: { backgroundColor: '#dcfce7', color: '#166534' },
   badgeGray: { backgroundColor: '#f3f4f6', color: '#6b7280' },

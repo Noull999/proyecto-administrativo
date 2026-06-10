@@ -1,14 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useApi } from '../hooks/useApi';
+import { useRole } from '../hooks/useRole';
 
 const emptyForm = { nombre: '', email: '', telefono: '', direccion: '', rfc: '' };
 
 export default function Clients() {
   const api = useApi();
+  const { canWrite, isAdmin } = useRole();
+
   const [clients, setClients] = useState([]);
+  const [pagination, setPagination] = useState(null);
+  const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
-  const [modal, setModal] = useState(null); // null | 'create' | 'edit'
+  const [modal, setModal] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [formError, setFormError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -17,31 +22,22 @@ export default function Clients() {
   const fetchClients = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await api.get('/clients', { params: { search } });
-      setClients(data);
+      const { data } = await api.get('/clients', { params: { search, page, limit: 20 } });
+      setClients(data.data);
+      setPagination(data.pagination);
     } finally {
       setLoading(false);
     }
-  }, [search]);
+  }, [search, page]);
 
   useEffect(() => { fetchClients(); }, [fetchClients]);
+  useEffect(() => { setPage(1); }, [search]);
 
-  function openCreate() {
-    setForm(emptyForm);
+  function openCreate() { setForm(emptyForm); setFormError(''); setModal('create'); }
+  function openEdit(c) {
+    setForm({ nombre: c.nombre, email: c.email || '', telefono: c.telefono || '', direccion: c.direccion || '', rfc: c.rfc || '' });
     setFormError('');
-    setModal('create');
-  }
-
-  function openEdit(client) {
-    setForm({
-      nombre: client.nombre,
-      email: client.email || '',
-      telefono: client.telefono || '',
-      direccion: client.direccion || '',
-      rfc: client.rfc || '',
-    });
-    setFormError('');
-    setModal({ type: 'edit', id: client.id });
+    setModal({ type: 'edit', id: c.id });
   }
 
   async function handleSave() {
@@ -49,15 +45,12 @@ export default function Clients() {
     setSaving(true);
     setFormError('');
     try {
-      if (modal === 'create') {
-        await api.post('/clients', form);
-      } else {
-        await api.put(`/clients/${modal.id}`, form);
-      }
+      if (modal === 'create') await api.post('/clients', form);
+      else await api.put(`/clients/${modal.id}`, form);
       setModal(null);
       fetchClients();
     } catch (err) {
-      setFormError(err.response?.data?.error || 'Error al guardar');
+      setFormError(err.response?.data?.error || err.message || 'Error al guardar');
     } finally {
       setSaving(false);
     }
@@ -73,7 +66,7 @@ export default function Clients() {
     <div>
       <div style={s.header}>
         <h1 style={s.title}>Clientes</h1>
-        <button onClick={openCreate} style={s.btnPrimary}>+ Nuevo cliente</button>
+        {canWrite && <button onClick={openCreate} style={s.btnPrimary}>+ Nuevo cliente</button>}
       </div>
 
       <div style={s.toolbar}>
@@ -93,7 +86,7 @@ export default function Clients() {
         <table style={s.table}>
           <thead>
             <tr>
-              {['Nombre', 'Email', 'Teléfono', 'RFC', 'Acciones'].map((h) => (
+              {['Nombre', 'Email', 'Teléfono', 'RFC', ...(canWrite ? ['Acciones'] : [])].map((h) => (
                 <th key={h} style={s.th}>{h}</th>
               ))}
             </tr>
@@ -105,26 +98,32 @@ export default function Clients() {
                 <td style={s.td}>{c.email || '—'}</td>
                 <td style={s.td}>{c.telefono || '—'}</td>
                 <td style={s.td}>{c.rfc || '—'}</td>
-                <td style={s.td}>
-                  <button onClick={() => openEdit(c)} style={s.btnAction}>Editar</button>
-                  <button onClick={() => setDeleteConfirm(c)} style={{ ...s.btnAction, ...s.btnDanger }}>
-                    Eliminar
-                  </button>
-                </td>
+                {canWrite && (
+                  <td style={s.td}>
+                    <button onClick={() => openEdit(c)} style={s.btnAction}>Editar</button>
+                    {isAdmin && (
+                      <button onClick={() => setDeleteConfirm(c)} style={{ ...s.btnAction, ...s.btnDanger }}>Eliminar</button>
+                    )}
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
         </table>
       )}
 
-      {/* Modal crear/editar */}
+      {pagination && pagination.pages > 1 && (
+        <div style={s.pagination}>
+          <button style={s.pgBtn} disabled={page === 1} onClick={() => setPage(page - 1)}>← Anterior</button>
+          <span style={s.pgInfo}>Página {pagination.page} de {pagination.pages} ({pagination.total} total)</span>
+          <button style={s.pgBtn} disabled={page >= pagination.pages} onClick={() => setPage(page + 1)}>Siguiente →</button>
+        </div>
+      )}
+
       {modal && (
         <div style={s.overlay}>
           <div style={s.modal}>
-            <h2 style={s.modalTitle}>
-              {modal === 'create' ? 'Nuevo cliente' : 'Editar cliente'}
-            </h2>
-
+            <h2 style={s.modalTitle}>{modal === 'create' ? 'Nuevo cliente' : 'Editar cliente'}</h2>
             {[
               { key: 'nombre', label: 'Nombre *', type: 'text' },
               { key: 'email', label: 'Email', type: 'email' },
@@ -134,30 +133,18 @@ export default function Clients() {
             ].map(({ key, label, type }) => (
               <div key={key} style={s.field}>
                 <label style={s.label}>{label}</label>
-                <input
-                  type={type}
-                  style={s.input}
-                  value={form[key]}
-                  onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-                />
+                <input type={type} style={s.input} value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} />
               </div>
             ))}
-
             {formError && <p style={s.error}>{formError}</p>}
-
             <div style={s.modalActions}>
-              <button onClick={() => setModal(null)} style={s.btnSecondary} disabled={saving}>
-                Cancelar
-              </button>
-              <button onClick={handleSave} style={s.btnPrimary} disabled={saving}>
-                {saving ? 'Guardando...' : 'Guardar'}
-              </button>
+              <button onClick={() => setModal(null)} style={s.btnSecondary} disabled={saving}>Cancelar</button>
+              <button onClick={handleSave} style={s.btnPrimary} disabled={saving}>{saving ? 'Guardando...' : 'Guardar'}</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Confirmación eliminar */}
       {deleteConfirm && (
         <div style={s.overlay}>
           <div style={{ ...s.modal, maxWidth: '380px' }}>
@@ -167,9 +154,7 @@ export default function Clients() {
             </p>
             <div style={s.modalActions}>
               <button onClick={() => setDeleteConfirm(null)} style={s.btnSecondary}>Cancelar</button>
-              <button onClick={() => handleDelete(deleteConfirm.id)} style={{ ...s.btnPrimary, backgroundColor: '#dc2626' }}>
-                Eliminar
-              </button>
+              <button onClick={() => handleDelete(deleteConfirm.id)} style={{ ...s.btnPrimary, backgroundColor: '#dc2626' }}>Eliminar</button>
             </div>
           </div>
         </div>
@@ -182,15 +167,15 @@ const s = {
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' },
   title: { margin: 0, fontSize: '1.5rem', color: '#111827' },
   toolbar: { marginBottom: '1rem' },
-  search: {
-    padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '6px',
-    fontSize: '0.875rem', width: '300px',
-  },
+  search: { padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '0.875rem', width: '300px' },
   table: { width: '100%', borderCollapse: 'collapse', backgroundColor: '#fff', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.07)' },
   th: { padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: '600', color: '#6b7280', backgroundColor: '#f9fafb', borderBottom: '1px solid #e5e7eb', textTransform: 'uppercase', letterSpacing: '0.05em' },
   tr: { borderBottom: '1px solid #f3f4f6' },
   td: { padding: '0.875rem 1rem', fontSize: '0.875rem', color: '#374151' },
   empty: { color: '#9ca3af', textAlign: 'center', margin: '3rem 0' },
+  pagination: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', marginTop: '1.5rem' },
+  pgBtn: { padding: '0.4rem 0.875rem', border: '1px solid #d1d5db', borderRadius: '6px', background: '#fff', cursor: 'pointer', fontSize: '0.875rem', color: '#374151' },
+  pgInfo: { fontSize: '0.875rem', color: '#6b7280' },
   btnPrimary: { padding: '0.5rem 1rem', backgroundColor: '#2563eb', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.875rem', fontWeight: '500' },
   btnSecondary: { padding: '0.5rem 1rem', backgroundColor: '#fff', color: '#374151', border: '1px solid #d1d5db', borderRadius: '6px', cursor: 'pointer', fontSize: '0.875rem' },
   btnAction: { padding: '0.25rem 0.625rem', background: 'none', border: '1px solid #d1d5db', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', marginRight: '0.25rem', color: '#374151' },

@@ -1,7 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApi } from '../hooks/useApi';
+import { useAuth } from '../context/AuthContext';
 import { fmt, STATUS_LABEL, STATUS_STYLE } from '../lib/format';
+
+const BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3001/api';
 
 const TIPO_OPTIONS = [
   { value: '', label: 'Todos' },
@@ -19,8 +22,11 @@ const ESTADO_OPTIONS = [
 
 export default function Invoices() {
   const api = useApi();
+  const { token } = useAuth();
   const navigate = useNavigate();
   const [invoices, setInvoices] = useState([]);
+  const [pagination, setPagination] = useState(null);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ tipo: '', estado: '', search: '' });
 
@@ -32,15 +38,37 @@ export default function Invoices() {
           tipo: filters.tipo || undefined,
           estado: filters.estado || undefined,
           search: filters.search || undefined,
+          page,
+          limit: 20,
         },
       });
-      setInvoices(data);
+      setInvoices(data.data);
+      setPagination(data.pagination);
     } finally {
       setLoading(false);
     }
-  }, [filters]);
+  }, [filters, page]);
 
   useEffect(() => { fetchInvoices(); }, [fetchInvoices]);
+  useEffect(() => { setPage(1); }, [filters]);
+
+  function exportCsv() {
+    const params = new URLSearchParams();
+    if (filters.tipo) params.set('tipo', filters.tipo);
+    if (filters.estado) params.set('estado', filters.estado);
+    const url = `${BASE}/invoices/export?${params.toString()}`;
+    // Descarga usando un <a> temporal con el token en la URL (el endpoint lee Authorization header)
+    // Como no podemos pasar headers en un <a>, usamos fetch + blob
+    fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.blob())
+      .then((blob) => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `facturas-${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+      });
+  }
 
   function setFilter(key, val) {
     setFilters((f) => ({ ...f, [key]: val }));
@@ -51,6 +79,9 @@ export default function Invoices() {
       <div style={s.header}>
         <h1 style={s.title}>Facturas y Cotizaciones</h1>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button onClick={exportCsv} style={s.btnExport} title="Exportar filtro actual a CSV">
+            ↓ CSV
+          </button>
           <button onClick={() => navigate('/invoices/new?tipo=cotizacion')} style={s.btnSecondary}>
             + Cotización
           </button>
@@ -136,6 +167,14 @@ export default function Invoices() {
           </tbody>
         </table>
       )}
+
+      {pagination && pagination.pages > 1 && (
+        <div style={s.pagination}>
+          <button style={s.pgBtn} disabled={page === 1} onClick={() => setPage(page - 1)}>← Anterior</button>
+          <span style={s.pgInfo}>Página {pagination.page} de {pagination.pages} ({pagination.total} total)</span>
+          <button style={s.pgBtn} disabled={page >= pagination.pages} onClick={() => setPage(page + 1)}>Siguiente →</button>
+        </div>
+      )}
     </div>
   );
 }
@@ -152,10 +191,14 @@ const s = {
   tr: { borderBottom: '1px solid #f3f4f6' },
   td: { padding: '0.875rem 1rem', fontSize: '0.875rem', color: '#374151', verticalAlign: 'middle' },
   empty: { color: '#9ca3af', textAlign: 'center', margin: '3rem 0' },
+  pagination: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', marginTop: '1.5rem' },
+  pgBtn: { padding: '0.4rem 0.875rem', border: '1px solid #d1d5db', borderRadius: '6px', background: '#fff', cursor: 'pointer', fontSize: '0.875rem', color: '#374151' },
+  pgInfo: { fontSize: '0.875rem', color: '#6b7280' },
   badge: { display: 'inline-block', padding: '0.2rem 0.6rem', borderRadius: '999px', fontSize: '0.75rem', fontWeight: '500' },
   tipoBadge: { display: 'inline-block', marginLeft: '0.4rem', padding: '0.1rem 0.4rem', borderRadius: '4px', fontSize: '0.65rem', backgroundColor: '#e0f2fe', color: '#0369a1', fontWeight: '600', verticalAlign: 'middle' },
   tipoBadgeFact: { backgroundColor: '#fce7f3', color: '#9d174d' },
   btnPrimary: { padding: '0.5rem 1rem', backgroundColor: '#2563eb', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.875rem', fontWeight: '500' },
   btnSecondary: { padding: '0.5rem 1rem', backgroundColor: '#fff', color: '#374151', border: '1px solid #d1d5db', borderRadius: '6px', cursor: 'pointer', fontSize: '0.875rem' },
+  btnExport: { padding: '0.5rem 0.875rem', backgroundColor: '#fff', color: '#059669', border: '1px solid #059669', borderRadius: '6px', cursor: 'pointer', fontSize: '0.875rem', fontWeight: '500' },
   btnAction: { padding: '0.25rem 0.75rem', background: 'none', border: '1px solid #d1d5db', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', color: '#374151' },
 };

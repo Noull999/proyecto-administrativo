@@ -1,10 +1,20 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import authRoutes from './routes/auth.js';
 import clientRoutes from './routes/clients.js';
 import productRoutes from './routes/products.js';
 import invoiceRoutes from './routes/invoices.js';
+import userRoutes from './routes/users.js';
+import workspaceRoutes from './routes/workspaces.js';
+import { startCronJobs } from './jobs/reminderEmails.js';
+import { syncEstadoVencidas } from './jobs/syncEstados.js';
+
+if (!process.env.JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET no está configurado en las variables de entorno.');
+  process.exit(1);
+}
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -15,27 +25,34 @@ const allowedOrigins = [
   process.env.FRONTEND_URL,
 ].filter(Boolean);
 
+app.use(helmet());
+app.disable('x-powered-by');
 app.use(cors({ origin: allowedOrigins }));
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/clients', clientRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/invoices', invoiceRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/workspace', workspaceRoutes);
 
-app.get('/api/health', (_req, res) => res.json({ ok: true }));
+app.get('/api/health', (_req, res) => res.json({ ok: true, ts: new Date().toISOString() }));
 
-// 404 para rutas inexistentes
 app.use((_req, res) => res.status(404).json({ error: 'Ruta no encontrada' }));
 
-// Error handler global — Express 5 reenvía rechazos async aquí automáticamente
 app.use((err, _req, res, _next) => {
   console.error(err);
   const status = err.status ?? err.statusCode ?? 500;
-  const message = err.message || 'Error interno del servidor';
+  const message = status < 500
+    ? (err.message || 'Error en la solicitud')
+    : 'Error interno del servidor';
   res.status(status).json({ error: message });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
+  // Sincronizar estados vencidos al arrancar (sin esperar a que llegue el cron)
+  try { await syncEstadoVencidas(); } catch (e) { console.error('syncEstadoVencidas error:', e.message); }
+  startCronJobs();
 });

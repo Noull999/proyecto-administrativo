@@ -17,6 +17,9 @@ export function useApi() {
     (res) => res,
     (err) => {
       if (err.response?.status === 401) logout();
+      if (err.response?.status === 403) {
+        err.message = 'No tienes permisos para realizar esta acción.';
+      }
       if (!err.response) {
         err.message = 'Sin conexión con el servidor. Verifica que el backend esté corriendo.';
       }

@@ -3,32 +3,56 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
+model Workspace {
+  id        Int        @id @default(autoincrement())
+  nombre    String
+  rfc       String?
+  direccion String?
+  telefono  String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  users     User[]
+  clients   Client[]
+  products  Product[]
+  invoices  Invoice[]
+  auditLogs AuditLog[]
+}
+
 model User {
-  id           Int      @id @default(autoincrement())
+  id           Int        @id @default(autoincrement())
+  workspaceId  Int
+  workspace    Workspace  @relation(fields: [workspaceId], references: [id])
   nombre       String
-  email        String   @unique
+  email        String     @unique
   passwordHash String
-  createdAt    DateTime @default(now())
+  role         String     @default("ADMIN") // ADMIN | CONTABLE | LECTOR
+  activo       Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  auditLogs    AuditLog[]
 }
 
 model Client {
-  id        Int       @id @default(autoincrement())
-  nombre    String
-  email     String?
-  telefono  String?
-  direccion String?
-  rfc       String?
-  activo    Boolean   @default(true)
-  createdAt DateTime  @default(now())
-  invoices  Invoice[]
+  id          Int       @id @default(autoincrement())
+  workspaceId Int
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  nombre      String
+  email       String?
+  telefono    String?
+  direccion   String?
+  rfc         String?
+  activo      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  invoices    Invoice[]
 }
 
 model Product {
   id           Int           @id @default(autoincrement())
+  workspaceId  Int
+  workspace    Workspace     @relation(fields: [workspaceId], references: [id])
   nombre       String
   descripcion  String?
   precio       Float
@@ -39,13 +63,15 @@ model Product {
 
 model Invoice {
   id               Int           @id @default(autoincrement())
+  workspaceId      Int
+  workspace        Workspace     @relation(fields: [workspaceId], references: [id])
   clientId         Int
   client           Client        @relation(fields: [clientId], references: [id])
-  tipo             String        // "cotizacion" | "factura"
-  folio            String        @unique
+  tipo             String
+  folio            String
   fecha            DateTime      @default(now())
   fechaVencimiento DateTime?
-  estado           String        @default("borrador") // borrador | enviada | pagada | vencida
+  estado           String        @default("borrador")
   subtotal         Float         @default(0)
   impuesto         Float         @default(0)
   total            Float         @default(0)
@@ -54,6 +80,8 @@ model Invoice {
   updatedAt        DateTime      @updatedAt
   items            InvoiceItem[]
   payments         Payment[]
+
+  @@unique([workspaceId, folio])
 }
 
 model InvoiceItem {
@@ -74,7 +102,21 @@ model Payment {
   invoice    Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   fecha      DateTime @default(now())
   monto      Float
-  metodo     String?  // efectivo | transferencia | tarjeta | cheque
+  metodo     String?
   referencia String?
   createdAt  DateTime @default(now())
+}
+
+model AuditLog {
+  id          Int       @id @default(autoincrement())
+  workspaceId Int
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  userId      Int
+  user        User      @relation(fields: [userId], references: [id])
+  accion      String    // CREATE | UPDATE | DELETE
+  entidad     String    // Client | Product | Invoice | Payment | User | Workspace
+  entidadId   Int?
+  detalle     String?
+  ip          String?
+  createdAt   DateTime  @default(now())
 }

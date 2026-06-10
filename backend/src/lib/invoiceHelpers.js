@@ -1,9 +1,9 @@
 import prisma from './prisma.js';
 
-export async function nextFolio(tipo) {
+export async function nextFolio(tipo, workspaceId) {
   const prefix = tipo === 'factura' ? 'F' : 'C';
   const last = await prisma.invoice.findFirst({
-    where: { tipo },
+    where: { tipo, workspaceId },
     orderBy: { id: 'desc' },
   });
   const num = last ? parseInt(last.folio.split('-')[1]) + 1 : 1;

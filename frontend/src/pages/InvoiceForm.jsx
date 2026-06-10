@@ -29,8 +29,8 @@ export default function InvoiceForm() {
 
   useEffect(() => {
     Promise.all([
-      api.get('/clients'),
-      api.get('/products', { params: { activo: 'true' } }),
+      api.get('/clients', { params: { all: 'true' } }),
+      api.get('/products', { params: { activo: 'true', all: 'true' } }),
     ]).then(([c, p]) => {
       setClients(c.data);
       setProducts(p.data);
