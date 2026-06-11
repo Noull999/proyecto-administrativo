@@ -17,12 +17,8 @@ export default function Login() {
     e.preventDefault();
     setError('');
     setLoading(true);
-
     try {
-      const { data } = await axios.post(`${BASE}/auth/login`, {
-        email,
-        password,
-      });
+      const { data } = await axios.post(`${BASE}/auth/login`, { email, password });
       login(data);
       navigate('/dashboard');
     } catch (err) {
@@ -33,40 +29,43 @@ export default function Login() {
   }
 
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        <h1 style={styles.title}>Servicios Asencio</h1>
-        <p style={styles.subtitle}>Sistema de Facturación</p>
+    <div style={s.page}>
+      <div style={s.card}>
+        <div style={s.logo}>
+          <span style={s.logoAccent}>●</span>
+        </div>
+        <h1 style={s.title}>Servicios Asencio</h1>
+        <p style={s.sub}>Sistema de Facturación</p>
 
-        <form onSubmit={handleSubmit} style={styles.form}>
-          <div style={styles.field}>
-            <label style={styles.label}>Correo electrónico</label>
+        <form onSubmit={handleSubmit} style={s.form}>
+          <div className="form-group">
+            <label className="label">Correo electrónico</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              style={styles.input}
-              placeholder="admin@serviciosasencio.com"
+              className="input"
+              placeholder="correo@empresa.com"
               required
               autoFocus
             />
           </div>
 
-          <div style={styles.field}>
-            <label style={styles.label}>Contraseña</label>
+          <div className="form-group">
+            <label className="label">Contraseña</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              style={styles.input}
+              className="input"
               placeholder="••••••••"
               required
             />
           </div>
 
-          {error && <p style={styles.error}>{error}</p>}
+          {error && <div className="alert alert-error">{error}</div>}
 
-          <button type="submit" disabled={loading} style={styles.button}>
+          <button type="submit" disabled={loading} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '.65rem', marginTop: '.25rem' }}>
             {loading ? 'Ingresando...' : 'Iniciar sesión'}
           </button>
         </form>
@@ -75,75 +74,19 @@ export default function Login() {
   );
 }
 
-const styles = {
-  container: {
-    minHeight: '100vh',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#f3f4f6',
+const s = {
+  page: {
+    minHeight: '100vh', display: 'flex', alignItems: 'center',
+    justifyContent: 'center', background: 'var(--bg)', padding: '1rem',
   },
   card: {
-    backgroundColor: '#ffffff',
-    padding: '2rem',
-    borderRadius: '8px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-    width: '100%',
-    maxWidth: '380px',
+    background: 'var(--surface)', border: '1px solid var(--border)',
+    borderRadius: '10px', padding: '2.25rem 2rem',
+    width: '100%', maxWidth: '360px', boxShadow: 'var(--shadow)',
   },
-  title: {
-    margin: '0 0 0.25rem',
-    fontSize: '1.5rem',
-    fontWeight: '700',
-    color: '#111827',
-    textAlign: 'center',
-  },
-  subtitle: {
-    margin: '0 0 1.75rem',
-    fontSize: '0.875rem',
-    color: '#6b7280',
-    textAlign: 'center',
-  },
-  form: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '1rem',
-  },
-  field: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.375rem',
-  },
-  label: {
-    fontSize: '0.875rem',
-    fontWeight: '500',
-    color: '#374151',
-  },
-  input: {
-    padding: '0.625rem 0.75rem',
-    border: '1px solid #d1d5db',
-    borderRadius: '6px',
-    fontSize: '0.875rem',
-    outline: 'none',
-    color: '#111827',
-  },
-  error: {
-    color: '#dc2626',
-    fontSize: '0.8rem',
-    margin: '0',
-    padding: '0.5rem',
-    backgroundColor: '#fef2f2',
-    borderRadius: '4px',
-  },
-  button: {
-    padding: '0.625rem',
-    backgroundColor: '#2563eb',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: '6px',
-    fontSize: '0.875rem',
-    fontWeight: '500',
-    cursor: 'pointer',
-    marginTop: '0.5rem',
-  },
+  logo: { textAlign: 'center', marginBottom: '1rem' },
+  logoAccent: { fontSize: '2rem', color: 'var(--accent)' },
+  title: { margin: '0 0 .3rem', fontSize: '1.3rem', fontWeight: '700', color: 'var(--text)', textAlign: 'center' },
+  sub: { margin: '0 0 1.75rem', fontSize: '.8rem', color: 'var(--text-2)', textAlign: 'center' },
+  form: { display: 'flex', flexDirection: 'column' },
 };

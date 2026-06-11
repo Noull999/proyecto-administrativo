@@ -2,7 +2,14 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useApi } from '../hooks/useApi';
-import { fmt, STATUS_LABEL, STATUS_STYLE } from '../lib/format';
+import { fmt } from '../lib/format';
+
+const STATUS_CONFIG = {
+  pagada:   { label: 'Pagada',   cls: 'badge-pagada',   bar: '#4ade80' },
+  enviada:  { label: 'Enviada',  cls: 'badge-enviada',  bar: '#60a5fa' },
+  vencida:  { label: 'Vencida',  cls: 'badge-vencida',  bar: '#f87171' },
+  borrador: { label: 'Borrador', cls: 'badge-borrador', bar: '#555555' },
+};
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -17,86 +24,57 @@ export default function Dashboard() {
       .finally(() => setLoading(false));
   }, []);
 
-  const cards = stats
-    ? [
-        {
-          label: 'Total cobrado',
-          value: fmt.currency(stats.montoPagado),
-          sub: `${stats.conteo.pagada ?? 0} factura${stats.conteo.pagada !== 1 ? 's' : ''} pagada${stats.conteo.pagada !== 1 ? 's' : ''}`,
-          color: '#166534',
-          bg: '#f0fdf4',
-          border: '#bbf7d0',
-        },
-        {
-          label: 'Por cobrar',
-          value: fmt.currency(stats.montoPendiente),
-          sub: `${stats.conteo.enviada ?? 0} enviada${stats.conteo.enviada !== 1 ? 's' : ''}`,
-          color: '#1d4ed8',
-          bg: '#eff6ff',
-          border: '#bfdbfe',
-        },
-        {
-          label: 'Monto vencido',
-          value: fmt.currency(stats.montoVencido),
-          sub: `${stats.conteo.vencida ?? 0} vencida${stats.conteo.vencida !== 1 ? 's' : ''}`,
-          color: '#991b1b',
-          bg: '#fef2f2',
-          border: '#fecaca',
-        },
-        {
-          label: 'En borrador',
-          value: stats.conteo.borrador ?? 0,
-          sub: 'pendientes de enviar',
-          color: '#374151',
-          bg: '#f9fafb',
-          border: '#e5e7eb',
-        },
-      ]
-    : [];
+  const kpis = stats ? [
+    { label: 'Total cobrado',  value: fmt.currency(stats.montoPagado),   sub: `${stats.conteo.pagada ?? 0} pagadas`,  color: '#4ade80' },
+    { label: 'Por cobrar',     value: fmt.currency(stats.montoPendiente), sub: `${stats.conteo.enviada ?? 0} enviadas`, color: '#60a5fa' },
+    { label: 'Monto vencido',  value: fmt.currency(stats.montoVencido),   sub: `${stats.conteo.vencida ?? 0} vencidas`, color: 'var(--accent)' },
+    { label: 'Borradores',     value: stats.conteo.borrador ?? 0,         sub: 'por enviar',                            color: 'var(--text-2)' },
+  ] : [];
 
   return (
     <div>
-      <div style={{ marginBottom: '1.75rem' }}>
-        <h1 style={{ margin: '0 0 0.25rem', fontSize: '1.5rem', color: '#111827' }}>
-          Bienvenido, {user?.nombre}
-        </h1>
-        <p style={{ margin: 0, color: '#6b7280', fontSize: '0.875rem' }}>
-          Resumen de facturación — Servicios Asencio
-        </p>
+      <div className="page-header" style={{ marginBottom: '1.75rem' }}>
+        <div>
+          <h1 className="page-title">Bienvenido, {user?.nombre}</h1>
+          <p className="page-sub">Resumen de facturación</p>
+        </div>
+        <button className="btn btn-primary" onClick={() => navigate('/invoices/new?tipo=factura')}>
+          + Nueva factura
+        </button>
       </div>
 
-      {/* Tarjetas KPI */}
+      {/* KPIs */}
       <div style={s.grid4}>
         {loading
-          ? [1, 2, 3, 4].map((i) => <div key={i} style={{ ...s.card, height: '100px', backgroundColor: '#f9fafb' }} />)
-          : cards.map(({ label, value, sub, color, bg, border }) => (
-              <div key={label} style={{ ...s.card, backgroundColor: bg, borderColor: border }}>
-                <p style={s.cardLabel}>{label}</p>
-                <p style={{ ...s.cardValue, color }}>{value}</p>
-                <p style={s.cardSub}>{sub}</p>
-              </div>
-            ))}
+          ? [1,2,3,4].map(i => <div key={i} className="skeleton" style={{ height: '100px' }} />)
+          : kpis.map(({ label, value, sub, color }) => (
+            <div key={label} className="card" style={s.kpi}>
+              <p style={s.kpiLabel}>{label}</p>
+              <p style={{ ...s.kpiValue, color }}>{value}</p>
+              <p style={s.kpiSub}>{sub}</p>
+            </div>
+          ))
+        }
       </div>
 
-      {/* Estado de facturas */}
       {stats && (
         <div style={s.grid2}>
-          <div style={{ ...s.card, marginTop: '1.25rem' }}>
-            <h2 style={s.sectionTitle}>Distribución por estado</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {['pagada', 'enviada', 'vencida', 'borrador'].map((estado) => {
+          {/* Distribución */}
+          <div className="card" style={{ marginTop: '1.25rem' }}>
+            <p style={s.sectionTitle}>Distribución por estado</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '.875rem' }}>
+              {['pagada','enviada','vencida','borrador'].map(estado => {
+                const cfg = STATUS_CONFIG[estado];
                 const count = stats.conteo[estado] ?? 0;
                 const pct = stats.total > 0 ? Math.round((count / stats.total) * 100) : 0;
                 return (
                   <div key={estado}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
-                      <span style={{ fontSize: '0.8rem', ...STATUS_STYLE[estado], padding: '0.15rem 0.5rem', borderRadius: '999px', fontWeight: '500' }}>
-                        {STATUS_LABEL[estado]}
-                      </span>
-                      <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>{count} ({pct}%)</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '.3rem' }}>
+                      <span className={`badge ${cfg.cls}`}>{cfg.label}</span>
+                      <span style={{ fontSize: '.75rem', color: 'var(--text-2)' }}>{count} ({pct}%)</span>
                     </div>
                     <div style={s.barBg}>
-                      <div style={{ ...s.barFill, width: `${pct}%`, backgroundColor: STATUS_STYLE[estado]?.color ?? '#9ca3af' }} />
+                      <div style={{ ...s.barFill, width: `${pct}%`, background: cfg.bar }} />
                     </div>
                   </div>
                 );
@@ -104,30 +82,26 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Últimas facturas */}
-          <div style={{ ...s.card, marginTop: '1.25rem' }}>
-            <h2 style={s.sectionTitle}>Últimas facturas</h2>
+          {/* Últimas */}
+          <div className="card" style={{ marginTop: '1.25rem' }}>
+            <p style={s.sectionTitle}>Últimas facturas</p>
             {stats.recientes.length === 0 ? (
-              <p style={{ color: '#9ca3af', fontSize: '0.875rem' }}>Sin facturas aún.</p>
+              <p className="empty-state" style={{ padding: '1.5rem 0' }}>Sin facturas aún.</p>
             ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <table className="tbl">
                 <tbody>
-                  {stats.recientes.map((inv) => (
-                    <tr
-                      key={inv.id}
-                      onClick={() => navigate(`/invoices/${inv.id}`)}
-                      style={s.recienteRow}
-                    >
-                      <td style={{ padding: '0.6rem 0', fontSize: '0.8rem' }}>
-                        <strong style={{ fontFamily: 'monospace' }}>{inv.folio}</strong>
+                  {stats.recientes.map(inv => (
+                    <tr key={inv.id} onClick={() => navigate(`/invoices/${inv.id}`)}>
+                      <td>
+                        <strong style={{ fontFamily: 'monospace', color: 'var(--text)' }}>{inv.folio}</strong>
                         <br />
-                        <span style={{ color: '#6b7280', fontSize: '0.72rem' }}>{inv.client?.nombre}</span>
+                        <span style={{ color: 'var(--text-2)', fontSize: '.72rem' }}>{inv.client?.nombre}</span>
                       </td>
-                      <td style={{ padding: '0.6rem 0', textAlign: 'right', fontSize: '0.8rem' }}>
+                      <td style={{ textAlign: 'right' }}>
                         <strong>{fmt.currency(inv.total)}</strong>
                         <br />
-                        <span style={{ ...STATUS_STYLE[inv.estadoReal], padding: '0.1rem 0.4rem', borderRadius: '999px', fontSize: '0.68rem', fontWeight: '500' }}>
-                          {STATUS_LABEL[inv.estadoReal]}
+                        <span className={`badge ${STATUS_CONFIG[inv.estadoReal]?.cls}`}>
+                          {STATUS_CONFIG[inv.estadoReal]?.label}
                         </span>
                       </td>
                     </tr>
@@ -135,7 +109,10 @@ export default function Dashboard() {
                 </tbody>
               </table>
             )}
-            <button onClick={() => navigate('/invoices')} style={s.verTodas}>
+            <button
+              onClick={() => navigate('/invoices')}
+              style={s.verTodas}
+            >
               Ver todas las facturas →
             </button>
           </div>
@@ -148,13 +125,12 @@ export default function Dashboard() {
 const s = {
   grid4: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' },
   grid2: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' },
-  card: { backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '1.25rem' },
-  cardLabel: { margin: '0 0 0.4rem', fontSize: '0.72rem', color: '#6b7280', textTransform: 'uppercase', fontWeight: '600', letterSpacing: '0.05em' },
-  cardValue: { margin: '0 0 0.25rem', fontSize: '1.6rem', fontWeight: '700' },
-  cardSub: { margin: 0, fontSize: '0.72rem', color: '#9ca3af' },
-  sectionTitle: { margin: '0 0 1rem', fontSize: '0.75rem', fontWeight: '600', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' },
-  barBg: { height: '6px', backgroundColor: '#f3f4f6', borderRadius: '999px', overflow: 'hidden' },
-  barFill: { height: '6px', borderRadius: '999px', transition: 'width 0.4s ease' },
-  recienteRow: { borderBottom: '1px solid #f3f4f6', cursor: 'pointer' },
-  verTodas: { marginTop: '0.75rem', background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', fontSize: '0.8rem', padding: 0 },
+  kpi: { display: 'flex', flexDirection: 'column' },
+  kpiLabel: { margin: '0 0 .4rem', fontSize: '.7rem', color: 'var(--text-3)', textTransform: 'uppercase', fontWeight: '600', letterSpacing: '.05em' },
+  kpiValue: { margin: '0 0 .25rem', fontSize: '1.55rem', fontWeight: '700' },
+  kpiSub: { margin: 0, fontSize: '.72rem', color: 'var(--text-3)' },
+  sectionTitle: { margin: '0 0 1rem', fontSize: '.7rem', fontWeight: '600', color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '.05em' },
+  barBg: { height: '5px', background: 'var(--surface-2)', borderRadius: '999px', overflow: 'hidden' },
+  barFill: { height: '5px', borderRadius: '999px', transition: 'width .4s ease' },
+  verTodas: { marginTop: '.75rem', background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: '.8rem', padding: 0, fontFamily: 'inherit' },
 };

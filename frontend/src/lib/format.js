@@ -14,8 +14,8 @@ export const STATUS_LABEL = {
 };
 
 export const STATUS_STYLE = {
-  borrador: { backgroundColor: '#f3f4f6', color: '#6b7280' },
-  enviada:  { backgroundColor: '#dbeafe', color: '#1d4ed8' },
-  pagada:   { backgroundColor: '#dcfce7', color: '#166534' },
-  vencida:  { backgroundColor: '#fee2e2', color: '#991b1b' },
+  borrador: { backgroundColor: 'rgba(255,255,255,.06)', color: '#888' },
+  enviada:  { backgroundColor: 'rgba(59,130,246,.12)',  color: '#60a5fa' },
+  pagada:   { backgroundColor: 'rgba(34,197,94,.12)',   color: '#4ade80' },
+  vencida:  { backgroundColor: 'rgba(239,68,68,.12)',   color: '#f87171' },
 };

@@ -1,0 +1,126 @@
+.layout-root {
+  display: flex;
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+/* ── Sidebar ── */
+.sidebar {
+  width: 210px;
+  background: var(--sidebar);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.sidebar-brand {
+  padding: 1.25rem 1rem .9rem;
+  border-bottom: 1px solid var(--border);
+}
+.sidebar-brand-name {
+  display: block;
+  color: var(--text);
+  font-weight: 700;
+  font-size: .875rem;
+  letter-spacing: .01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sidebar-brand-tag {
+  display: block;
+  color: var(--text-3);
+  font-size: .65rem;
+  margin-top: .2rem;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+}
+
+/* ── Nav links ── */
+.sidebar-nav {
+  flex: 1;
+  padding: .75rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .6rem 1rem;
+  color: var(--text-2);
+  text-decoration: none;
+  font-size: .82rem;
+  font-weight: 400;
+  border-left: 2px solid transparent;
+  transition: color .15s, background .15s, border-color .15s;
+}
+.sidebar-link:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+  border-left-color: var(--border);
+}
+.sidebar-link.active {
+  background: var(--accent-muted);
+  color: var(--accent);
+  border-left-color: var(--accent);
+  font-weight: 500;
+}
+.sidebar-dot {
+  font-size: .45rem;
+  color: inherit;
+}
+
+/* ── Footer ── */
+.sidebar-footer {
+  padding: .875rem 1rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+}
+.sidebar-user { display: flex; flex-direction: column; gap: .2rem; }
+.sidebar-user-name {
+  font-size: .78rem;
+  color: var(--text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sidebar-user-role {
+  font-size: .65rem;
+  color: var(--accent);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.sidebar-logout {
+  padding: .35rem .6rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-3);
+  cursor: pointer;
+  font-size: .75rem;
+  font-family: inherit;
+  text-align: left;
+  transition: all .15s;
+}
+.sidebar-logout:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ── Main content ── */
+.layout-main {
+  flex: 1;
+  overflow: auto;
+  padding: 2rem;
+  max-width: 1200px;
+}
