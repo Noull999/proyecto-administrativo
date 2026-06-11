@@ -18,8 +18,13 @@ router.get('/', async (req, res) => {
 
 // PUT /api/workspace
 router.put('/', requireRole('ADMIN'), async (req, res) => {
-  const { nombre, rfc, direccion, telefono } = req.body;
+  const { nombre, rfc, direccion, telefono, email } = req.body;
   if (!nombre?.trim()) return res.status(400).json({ error: 'El nombre de empresa es requerido' });
+
+  const emailTrim = email?.trim() || null;
+  if (emailTrim && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrim)) {
+    return res.status(400).json({ error: 'El correo de contacto no es válido' });
+  }
 
   const workspace = await prisma.workspace.update({
     where: { id: req.workspaceId },
@@ -28,6 +33,7 @@ router.put('/', requireRole('ADMIN'), async (req, res) => {
       rfc: rfc?.trim().slice(0, 20) || null,
       direccion: direccion?.trim().slice(0, 500) || null,
       telefono: telefono?.trim().slice(0, 30) || null,
+      email: emailTrim?.slice(0, 120) || null,
     },
   });
 

@@ -29,10 +29,12 @@ export async function sendInvoiceEmail({ invoice, pdfBuffer }) {
 
   const tipo = invoice.tipo === 'factura' ? 'Factura' : 'Cotización';
   const wsNombre = invoice.workspace?.nombre ?? 'Servicios';
+  const wsEmail = invoice.workspace?.email; // correo de contacto de la empresa → reply-to
 
   try {
     const { error } = await resend.emails.send({
       from: `${wsNombre} <${from()}>`,
+      ...(wsEmail ? { replyTo: wsEmail } : {}),
       to: [clientEmail],
       subject: `${tipo} ${invoice.folio} — ${wsNombre}`,
       html: `

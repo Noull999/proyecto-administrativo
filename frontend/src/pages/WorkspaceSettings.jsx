@@ -4,7 +4,8 @@ import { useRole } from '../hooks/useRole';
 import { useAuth } from '../context/AuthContext';
 
 const FIELDS = [
-  { key: 'nombre',    label: 'Nombre de empresa *', type: 'text' },
+  { key: 'nombre',    label: 'Nombre de empresa *',  type: 'text',  hint: 'Aparece como remitente en los correos a tus clientes.' },
+  { key: 'email',     label: 'Correo de contacto',   type: 'email', hint: 'Cuando un cliente responda a una factura, le llegará a este correo.' },
   { key: 'rfc',       label: 'RFC / NIT',            type: 'text' },
   { key: 'telefono',  label: 'Teléfono',             type: 'text' },
   { key: 'direccion', label: 'Dirección',            type: 'text' },
@@ -14,7 +15,7 @@ export default function WorkspaceSettings() {
   const api = useApi();
   const { isAdmin } = useRole();
   const { user, login, token } = useAuth();
-  const [form, setForm] = useState({ nombre: '', rfc: '', direccion: '', telefono: '' });
+  const [form, setForm] = useState({ nombre: '', email: '', rfc: '', direccion: '', telefono: '' });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -22,7 +23,7 @@ export default function WorkspaceSettings() {
 
   useEffect(() => {
     api.get('/workspace').then(({ data }) => {
-      setForm({ nombre: data.nombre || '', rfc: data.rfc || '', direccion: data.direccion || '', telefono: data.telefono || '' });
+      setForm({ nombre: data.nombre || '', email: data.email || '', rfc: data.rfc || '', direccion: data.direccion || '', telefono: data.telefono || '' });
     }).finally(() => setLoading(false));
   }, []);
 
@@ -48,7 +49,7 @@ export default function WorkspaceSettings() {
 
       <div className="card">
         <p style={s.sectionTitle}>Datos de la empresa</p>
-        {FIELDS.map(({ key, label, type }) => (
+        {FIELDS.map(({ key, label, type, hint }) => (
           <div className="form-group" key={key}>
             <label className="label">{label}</label>
             <input
@@ -59,6 +60,7 @@ export default function WorkspaceSettings() {
               onChange={e => setForm({ ...form, [key]: e.target.value })}
               disabled={!isAdmin}
             />
+            {hint && <span style={{ fontSize: '.72rem', color: 'var(--text-3)', marginTop: '.3rem' }}>{hint}</span>}
           </div>
         ))}
         {error && <div className="alert alert-error">{error}</div>}
