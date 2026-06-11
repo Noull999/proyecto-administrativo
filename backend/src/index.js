@@ -46,7 +46,15 @@ app.use('/api/users', userRoutes);
 app.use('/api/workspace', workspaceRoutes);
 app.use('/api/admin', adminRoutes);
 
-app.get('/api/health', (_req, res) => res.json({ ok: true, ts: new Date().toISOString() }));
+app.get('/api/health', (_req, res) => {
+  const smtp = {
+    host: process.env.SMTP_HOST || '(no configurado)',
+    port: process.env.SMTP_PORT || '(no configurado)',
+    user: process.env.SMTP_USER ? process.env.SMTP_USER.replace(/(?<=.{3}).(?=.*@)/g, '*') : '(no configurado)',
+    passLen: process.env.SMTP_PASS ? process.env.SMTP_PASS.length : 0,
+  };
+  res.json({ ok: true, ts: new Date().toISOString(), smtp });
+});
 
 app.use((_req, res) => res.status(404).json({ error: 'Ruta no encontrada' }));
 

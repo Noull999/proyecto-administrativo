@@ -2,13 +2,23 @@ import nodemailer from 'nodemailer';
 
 function getTransporter() {
   const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS } = process.env;
-  if (!SMTP_HOST || !SMTP_USER) return null;
+  if (!SMTP_HOST || !SMTP_USER) {
+    console.warn('Email: faltan variables SMTP_HOST o SMTP_USER');
+    return null;
+  }
+  const port = Number(SMTP_PORT) || 587;
+  const secure = port === 465;
+  console.log(`Email: conectando a ${SMTP_HOST}:${port} (secure=${secure}, user=${SMTP_USER})`);
   return nodemailer.createTransport({
     host: SMTP_HOST,
-    port: Number(SMTP_PORT) || 587,
-    secure: Number(SMTP_PORT) === 465,
+    port,
+    secure,
     auth: { user: SMTP_USER, pass: SMTP_PASS },
-    family: 4, // Forzar IPv4: Railway no tiene salida IPv6 y falla con ENETUNREACH
+    family: 4,           // Forzar IPv4: Railway no tiene salida IPv6
+    connectionTimeout: 15000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
+    tls: { rejectUnauthorized: false },
   });
 }
 
