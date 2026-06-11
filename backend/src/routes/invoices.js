@@ -156,7 +156,7 @@ router.post('/', requireRole('ADMIN', 'CONTABLE'), async (req, res) => {
   if (!clientOk) return res.status(400).json({ error: 'Cliente inválido' });
 
   const parsedItems = items.map((item) => ({
-    productId: item.productId || null,
+    productId: item.productId ? Number(item.productId) : null,
     descripcion: item.descripcion,
     cantidad: Number(item.cantidad),
     precioUnitario: Number(item.precioUnitario),
@@ -207,7 +207,7 @@ router.put('/:id', requireRole('ADMIN', 'CONTABLE'), async (req, res) => {
   if (!clientOk) return res.status(400).json({ error: 'Cliente inválido' });
 
   const parsedItems = items.map((item) => ({
-    productId: item.productId || null,
+    productId: item.productId ? Number(item.productId) : null,
     descripcion: item.descripcion,
     cantidad: Number(item.cantidad),
     precioUnitario: Number(item.precioUnitario),
