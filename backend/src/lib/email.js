@@ -1,4 +1,8 @@
 import nodemailer from 'nodemailer';
+import dns from 'dns';
+
+// Railway no tiene salida IPv6 — forzar que Node resuelva siempre a IPv4
+dns.setDefaultResultOrder('ipv4first');
 
 function getTransporter() {
   const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS } = process.env;
