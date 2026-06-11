@@ -251,32 +251,41 @@ router.delete('/:id', requireRole('ADMIN'), async (req, res) => {
   res.json({ ok: true });
 });
 
-// POST /api/invoices/:id/send — cambia estado a enviada y manda email al cliente
+// POST /api/invoices/:id/send — manda email al cliente con el PDF y marca como enviada
 router.post('/:id/send', requireRole('ADMIN', 'CONTABLE'), async (req, res) => {
   const invoice = await prisma.invoice.findFirst({
     where: { id: Number(req.params.id), workspaceId: req.workspaceId },
   });
   if (!invoice) return res.status(404).json({ error: 'Factura no encontrada' });
-  if (invoice.estado !== 'borrador') {
-    return res.status(400).json({ error: 'Solo se pueden enviar facturas en borrador' });
+  if (computeStatus(invoice) === 'pagada') {
+    return res.status(400).json({ error: 'La factura ya está pagada' });
   }
+
+  // Solo avanza el estado borrador → enviada; si ya está enviada/vencida la deja igual (reenvío)
+  const nuevoEstado = invoice.estado === 'borrador' ? 'enviada' : invoice.estado;
 
   const updated = await prisma.invoice.update({
     where: { id: Number(req.params.id) },
-    data: { estado: 'enviada' },
+    data: { estado: nuevoEstado },
     include: { ...includeAll, workspace: true },
   });
-  await logAudit(req, { accion: 'UPDATE', entidad: 'Invoice', entidadId: invoice.id, detalle: { estado: 'enviada' } });
 
-  // Enviar email con PDF adjunto (falla silenciosamente si SMTP no está configurado)
+  // Enviar email con PDF adjunto
+  let emailResult = { sent: false, reason: 'No se pudo enviar el correo.' };
   try {
     const pdfBuffer = await buildPdfBuffer(updated);
-    await sendInvoiceEmail({ invoice: updated, pdfBuffer });
+    emailResult = await sendInvoiceEmail({ invoice: updated, pdfBuffer });
   } catch (err) {
     console.error('Error al enviar email de factura:', err.message);
+    emailResult = { sent: false, reason: 'Error del servidor de correo: ' + err.message };
   }
 
-  res.json({ ...updated, estadoReal: computeStatus(updated) });
+  await logAudit(req, {
+    accion: 'UPDATE', entidad: 'Invoice', entidadId: invoice.id,
+    detalle: { estado: nuevoEstado, emailEnviado: emailResult.sent },
+  });
+
+  res.json({ ...updated, estadoReal: computeStatus(updated), email: emailResult });
 });
 
 // POST /api/invoices/:id/convert

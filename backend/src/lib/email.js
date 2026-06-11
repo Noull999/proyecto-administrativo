@@ -27,13 +27,13 @@ export async function sendInvoiceEmail({ invoice, pdfBuffer }) {
   const transporter = getTransporter();
   if (!transporter) {
     console.warn('Email: SMTP no configurado — omitiendo envío de factura');
-    return;
+    return { sent: false, reason: 'El servidor de correo no está configurado.' };
   }
 
   const clientEmail = invoice.client?.email;
   if (!clientEmail) {
     console.warn(`Email: el cliente "${invoice.client?.nombre}" no tiene email — omitiendo envío`);
-    return;
+    return { sent: false, reason: 'El cliente no tiene correo registrado.' };
   }
 
   const tipo = invoice.tipo === 'factura' ? 'Factura' : 'Cotización';
@@ -56,6 +56,7 @@ export async function sendInvoiceEmail({ invoice, pdfBuffer }) {
   });
 
   console.log(`Email: factura ${invoice.folio} enviada a ${clientEmail}`);
+  return { sent: true, email: clientEmail };
 }
 
 /**

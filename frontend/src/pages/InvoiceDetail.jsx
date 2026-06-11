@@ -14,6 +14,8 @@ export default function InvoiceDetail() {
   const [payError, setPayError] = useState('');
   const [paying, setPaying] = useState(false);
   const [actionError, setActionError] = useState('');
+  const [actionMsg, setActionMsg] = useState(null); // { type: 'success'|'warn', text }
+  const [sending, setSending] = useState(false);
   const [downloading, setDownloading] = useState(false);
 
   const fetch = useCallback(async () => {
@@ -51,11 +53,31 @@ export default function InvoiceDetail() {
 
   async function handleAction(action) {
     setActionError('');
+    setActionMsg(null);
     try {
       await api.post(`/invoices/${id}/${action}`);
       fetch();
     } catch (err) {
       setActionError(err.response?.data?.error || 'Error');
+    }
+  }
+
+  async function handleSend() {
+    setActionError('');
+    setActionMsg(null);
+    setSending(true);
+    try {
+      const { data } = await api.post(`/invoices/${id}/send`);
+      if (data.email?.sent) {
+        setActionMsg({ type: 'success', text: `Correo enviado a ${data.email.email} con el PDF adjunto.` });
+      } else {
+        setActionMsg({ type: 'warn', text: `Factura marcada como enviada, pero el correo no salió: ${data.email?.reason || 'motivo desconocido'}` });
+      }
+      fetch();
+    } catch (err) {
+      setActionError(err.response?.data?.error || 'Error al enviar');
+    } finally {
+      setSending(false);
     }
   }
 
@@ -101,8 +123,10 @@ export default function InvoiceDetail() {
           {estado !== 'pagada' && (
             <button onClick={() => navigate(`/invoices/${id}/edit`)} style={s.btnSecondary}>Editar</button>
           )}
-          {estado === 'borrador' && (
-            <button onClick={() => handleAction('send')} style={s.btnAction}>Marcar enviada</button>
+          {estado !== 'pagada' && (
+            <button onClick={handleSend} style={s.btnSend} disabled={sending}>
+              {sending ? 'Enviando...' : estado === 'borrador' ? '📧 Enviar al cliente' : '📧 Reenviar correo'}
+            </button>
           )}
           {invoice.tipo === 'cotizacion' && estado !== 'pagada' && (
             <button onClick={() => handleAction('convert')} style={s.btnAction}>
@@ -118,6 +142,15 @@ export default function InvoiceDetail() {
       </div>
 
       {actionError && <p style={s.error}>{actionError}</p>}
+      {actionMsg && (
+        <p style={actionMsg.type === 'success' ? s.successMsg : s.warnMsg}>
+          {actionMsg.type === 'success' ? '✓ ' : '⚠ '}{actionMsg.text}
+        </p>
+      )}
+      {invoice.client?.email
+        ? <p style={s.clientEmailHint}>El correo se enviará a: <strong>{invoice.client.email}</strong></p>
+        : <p style={s.warnMsg}>⚠ Este cliente no tiene correo registrado. Edítalo en Clientes para poder enviarle la factura.</p>
+      }
 
       {/* Info general */}
       <div style={s.grid3}>
@@ -266,6 +299,9 @@ const s = {
   totalRow: { display: 'flex', justifyContent: 'space-between', padding: '0.2rem 0', fontSize: '0.875rem', color: '#374151' },
   totalFinal: { borderTop: '1px solid #e5e7eb', marginTop: '0.25rem', paddingTop: '0.5rem', fontWeight: '700', fontSize: '1rem', color: '#111827' },
   error: { color: '#dc2626', fontSize: '0.8rem', padding: '0.5rem', backgroundColor: '#fef2f2', borderRadius: '4px', margin: '0.5rem 0' },
+  successMsg: { color: '#166534', fontSize: '0.85rem', padding: '0.625rem 0.875rem', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '6px', margin: '0.5rem 0' },
+  warnMsg: { color: '#92400e', fontSize: '0.85rem', padding: '0.625rem 0.875rem', backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '6px', margin: '0.5rem 0' },
+  clientEmailHint: { color: '#6b7280', fontSize: '0.8rem', margin: '0.5rem 0' },
   overlay: { position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 },
   modal: { backgroundColor: '#fff', borderRadius: '8px', padding: '1.5rem', width: '100%', maxWidth: '400px', boxShadow: '0 20px 25px rgba(0,0,0,0.15)' },
   modalTitle: { margin: '0 0 0.75rem', fontSize: '1.125rem', color: '#111827' },
@@ -276,4 +312,5 @@ const s = {
   btnPrimary: { padding: '0.5rem 1rem', backgroundColor: '#2563eb', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.875rem', fontWeight: '500' },
   btnSecondary: { padding: '0.5rem 1rem', backgroundColor: '#fff', color: '#374151', border: '1px solid #d1d5db', borderRadius: '6px', cursor: 'pointer', fontSize: '0.875rem' },
   btnAction: { padding: '0.5rem 1rem', backgroundColor: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', borderRadius: '6px', cursor: 'pointer', fontSize: '0.875rem' },
+  btnSend: { padding: '0.5rem 1rem', backgroundColor: '#7c3aed', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.875rem', fontWeight: '500' },
 };
