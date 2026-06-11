@@ -8,6 +8,7 @@ function getTransporter() {
     port: Number(SMTP_PORT) || 587,
     secure: Number(SMTP_PORT) === 465,
     auth: { user: SMTP_USER, pass: SMTP_PASS },
+    family: 4, // Forzar IPv4: Railway no tiene salida IPv6 y falla con ENETUNREACH
   });
 }
 
