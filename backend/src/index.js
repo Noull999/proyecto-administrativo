@@ -22,12 +22,19 @@ const PORT = process.env.PORT || 3001;
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:5174',
+  'http://localhost:5175',
   process.env.FRONTEND_URL,
 ].filter(Boolean);
 
 app.use(helmet());
 app.disable('x-powered-by');
-app.use(cors({ origin: allowedOrigins }));
+app.use(cors({
+  origin: (origin, cb) => {
+    if (!origin) return cb(null, true);
+    if (allowedOrigins.includes(origin) || /\.vercel\.app$/.test(origin)) return cb(null, true);
+    cb(new Error('CORS not allowed'));
+  },
+}));
 app.use(express.json({ limit: '1mb' }));
 
 app.use('/api/auth', authRoutes);
