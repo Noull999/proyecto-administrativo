@@ -8,6 +8,7 @@ import productRoutes from './routes/products.js';
 import invoiceRoutes from './routes/invoices.js';
 import userRoutes from './routes/users.js';
 import workspaceRoutes from './routes/workspaces.js';
+import adminRoutes from './routes/admin.js';
 import { startCronJobs } from './jobs/reminderEmails.js';
 import { syncEstadoVencidas } from './jobs/syncEstados.js';
 
@@ -43,6 +44,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/invoices', invoiceRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/workspace', workspaceRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.get('/api/health', (_req, res) => res.json({ ok: true, ts: new Date().toISOString() }));
 

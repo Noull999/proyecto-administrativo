@@ -5,8 +5,9 @@ export function useRole() {
   const role = user?.role ?? 'LECTOR';
   return {
     role,
-    isAdmin: role === 'ADMIN',
-    canWrite: role === 'ADMIN' || role === 'CONTABLE',
+    isSuperAdmin: role === 'SUPERADMIN',
+    isAdmin: role === 'ADMIN' || role === 'SUPERADMIN',
+    canWrite: role === 'ADMIN' || role === 'CONTABLE' || role === 'SUPERADMIN',
     isLector: role === 'LECTOR',
   };
 }

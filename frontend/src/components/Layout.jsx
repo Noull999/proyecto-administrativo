@@ -2,12 +2,12 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useRole } from '../hooks/useRole';
 
-const ROLE_LABEL = { ADMIN: 'Admin', CONTABLE: 'Contable', LECTOR: 'Lector' };
-const ROLE_COLOR = { ADMIN: '#2563eb', CONTABLE: '#059669', LECTOR: '#6b7280' };
+const ROLE_LABEL = { SUPERADMIN: 'Super Admin', ADMIN: 'Admin', CONTABLE: 'Contable', LECTOR: 'Lector' };
+const ROLE_COLOR = { SUPERADMIN: '#7c3aed', ADMIN: '#2563eb', CONTABLE: '#059669', LECTOR: '#6b7280' };
 
 export default function Layout({ children }) {
   const { user, logout } = useAuth();
-  const { isAdmin } = useRole();
+  const { isAdmin, isSuperAdmin } = useRole();
   const navigate = useNavigate();
 
   function handleLogout() {
@@ -24,6 +24,7 @@ export default function Layout({ children }) {
       { to: '/users', label: 'Usuarios' },
       { to: '/settings', label: 'Configuración' },
     ] : []),
+    ...(isSuperAdmin ? [{ to: '/admin', label: '⚙ Empresas' }] : []),
   ];
 
   return (

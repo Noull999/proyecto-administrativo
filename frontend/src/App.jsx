@@ -12,6 +12,7 @@ import InvoiceForm from './pages/InvoiceForm';
 import InvoiceDetail from './pages/InvoiceDetail';
 import Users from './pages/Users';
 import WorkspaceSettings from './pages/WorkspaceSettings';
+import AdminPanel from './pages/AdminPanel';
 import NotFound from './pages/NotFound';
 
 function AppLayout({ children }) {
@@ -39,6 +40,7 @@ export default function App() {
           <Route path="/invoices/:id" element={<AppLayout><InvoiceDetail /></AppLayout>} />
           <Route path="/users" element={<AppLayout><Users /></AppLayout>} />
           <Route path="/settings" element={<AppLayout><WorkspaceSettings /></AppLayout>} />
+          <Route path="/admin" element={<AppLayout><AdminPanel /></AppLayout>} />
           <Route path="/404" element={<AppLayout><NotFound /></AppLayout>} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
