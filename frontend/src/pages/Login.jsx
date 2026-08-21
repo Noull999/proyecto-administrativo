@@ -65,7 +65,7 @@ export default function Login() {
 
           {error && <div className="alert alert-error">{error}</div>}
 
-          <button type="submit" disabled={loading} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '.65rem', marginTop: '.25rem' }}>
+          <button type="submit" disabled={loading} data-track="intento-login" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '.65rem', marginTop: '.25rem' }}>
             {loading ? 'Ingresando...' : 'Iniciar sesión'}
           </button>
         </form>
