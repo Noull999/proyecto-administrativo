@@ -5,6 +5,7 @@
   "description": "Backend - App de Facturación Servicios Asencio",
   "main": "src/index.js",
   "scripts": {
+    "postinstall": "prisma generate",
     "dev": "tsx --watch src/index.js",
     "start": "prisma migrate deploy && tsx src/index.js",
     "seed": "tsx src/seed.js",

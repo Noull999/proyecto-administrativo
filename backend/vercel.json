@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "builds": [{ "src": "src/index.js", "use": "@vercel/node" }],
+  "rewrites": [{ "source": "/(.*)", "destination": "/src/index.js" }],
+  "crons": [
+    { "path": "/api/cron/sync-vencidas", "schedule": "0 7 * * *" },
+    { "path": "/api/cron/reminders", "schedule": "0 8 * * *" }
+  ]
+}

@@ -9,6 +9,7 @@ import invoiceRoutes from './routes/invoices.js';
 import userRoutes from './routes/users.js';
 import workspaceRoutes from './routes/workspaces.js';
 import adminRoutes from './routes/admin.js';
+import cronRoutes from './routes/cron.js';
 import { startCronJobs } from './jobs/reminderEmails.js';
 import { syncEstadoVencidas } from './jobs/syncEstados.js';
 
@@ -45,6 +46,7 @@ app.use('/api/invoices', invoiceRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/workspace', workspaceRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/cron', cronRoutes);
 
 app.get('/api/health', (_req, res) => {
   const key = process.env.RESEND_API_KEY || '';
@@ -69,9 +71,17 @@ app.use((err, _req, res, _next) => {
   res.status(status).json({ error: message });
 });
 
-app.listen(PORT, async () => {
-  console.log(`Servidor corriendo en http://localhost:${PORT}`);
-  // Sincronizar estados vencidos al arrancar (sin esperar a que llegue el cron)
-  try { await syncEstadoVencidas(); } catch (e) { console.error('syncEstadoVencidas error:', e.message); }
-  startCronJobs();
-});
+// En Vercel no hay proceso de fondo: cada invocacion es una funcion
+// serverless de corta duracion, asi que ni app.listen() ni node-cron
+// (startCronJobs) tienen sentido ahi — Vercel Cron llama /api/cron/* por
+// HTTP en su lugar (ver vercel.json + src/routes/cron.js). Local/Railway
+// siguen arrancando igual que antes.
+if (!process.env.VERCEL) {
+  app.listen(PORT, async () => {
+    console.log(`Servidor corriendo en http://localhost:${PORT}`);
+    try { await syncEstadoVencidas(); } catch (e) { console.error('syncEstadoVencidas error:', e.message); }
+    startCronJobs();
+  });
+}
+
+export default app;

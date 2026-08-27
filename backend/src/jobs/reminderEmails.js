@@ -5,7 +5,7 @@ import { syncEstadoVencidas } from './syncEstados.js';
 
 const REMINDER_DAYS = Number(process.env.REMINDER_DAYS) || 3;
 
-async function runReminders() {
+export async function runReminders() {
   const hoy = new Date();
   hoy.setHours(0, 0, 0, 0);
 
